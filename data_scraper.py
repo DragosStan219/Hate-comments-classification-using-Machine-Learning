@@ -1,40 +1,50 @@
-#url
+#url-s
 # https://www.youtube.com/watch?v=ZJ-jI6i1kzo (Sen. Cassidy reacts to RFK Jr.'s changes to the CDC website)
 # https://www.youtube.com/watch?v=cmnru0H1JlI (Geneva hosts Ukraine talks as Trump pushes peace plan | BBC News)
 
 import time
 import pandas as pd
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+from bs4 import BeautifulSoup
 
 # Browser User Agent
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-' AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'}
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'}
 
+# Setup Selenium Chrome driver
+options = webdriver.ChromeOptions()
+options.add_argument(f'user-agent={headers["User-Agent"]}')
+options.add_argument('--no-sandbox')
+options.add_argument('--disable-dev-shm-usage')
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
 url = "https://www.youtube.com/watch?v=ZJ-jI6i1kzo"
-page = requests.get(url, headers=headers)
-print(page.text)
+driver.get(url)
 
-#Pulling the information from raw HTML code
-soup = BeautifulSoup(page.text, 'html.parser')
-print(soup.prettify())
+# Scroll to load comments
+time.sleep(3)  # Wait for page load
+for _ in range(5):  # Scroll down 5 times
+    driver.execute_script("window.scrollBy(0, 3000)")
+    time.sleep(2)  # Wait for comments to load
 
-#Extract specific data (where the information matters)
-quotes = []
-quote_boxes = soup.find_all('div', class_='style-scope ytd-comment-thread-renderer')
-for box in quote_boxes:
-    quote_text = box.img['alt'].split(" #")
-    quote = {
-        'theme': box.h5.text.strip(),
-        'image_url': box.img['src'],
-        'lines': quote_text[0],
-        'author': quote_text[1] if len(quote_text) > 1 else 'Unknown'
-    }
-    quotes.append(quote)
-# Display extracted quotes
-for q in quotes[:5]:  # print only first 5 for brevity
-    print(q)
+# Extract comments from HTML
+soup = BeautifulSoup(driver.page_source, 'html.parser')
+comments = []
+
+# Find comment elements (YouTube structure may vary)
+comment_containers = soup.find_all('ytd-comment-thread-renderer')
+
+for comment in comment_containers:
+    comments.append({
+        'text': comment.get_text(strip=True),
+        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+    })
+
+# Save to CSV
+df = pd.DataFrame(comments)
+df.to_csv('youtube_comments.csv', index=False, encoding='utf-8')
+print(f"Scraped {len(comments)} comments")
+
+driver.quit()
