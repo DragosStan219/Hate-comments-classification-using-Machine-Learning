@@ -6,37 +6,48 @@ from youtube_comment_downloader import YoutubeCommentDownloader
 import pandas as pd
 import itertools
 
-def descarca(url ,limita=500):
-    dowloader = YoutubeCommentDownloader()
-    print(f"⏳ Încep descărcarea de la: {url} ...")
+# For generating the comment id
+import random
+import string
+ID_LENGHT = 8
 
-    generatorComentarii = dowloader.get_comments_from_url(url, sort_by=1)
+def download(url ,limit=500):
+    dowloader = YoutubeCommentDownloader()
+    print(f" Begin download from {url}...\n")
+
+    CommentGenerator = dowloader.get_comments_from_url(url, sort_by=1)
 
     text = []
 
-    for i in itertools.islice(generatorComentarii, limita):
+    for i in itertools.islice(CommentGenerator, limit):
         text.append(i['text'])
 
-    print(f"✅ Gata! Am descărcat {len(text)} comentarii.")
+    print(f"{len(text)} has been downloaded!\n")
     return text
+
+def generate_id():
+    id = ''.join(random.choices(string.ascii_letters + string.digits, k = ID_LENGHT))
+    return id
+
 
 url_toxic = 'https://www.youtube.com/watch?v=ZJ-jI6i1kzo'
 url_non_toxic = 'https://www.youtube.com/watch?v=1ZYbU82GVz4'
 
-comentarii_rele = descarca(url_toxic, limita=500)
-comentarii_bune = descarca(url_non_toxic, limita=500)
+good_comments = download(url_toxic, limit=500)
+bad_comments = download(url_non_toxic, limit=500)
+#ADD COMMENTARY ID USING A RANDOM FUCNTION
+good_soup = [{'COMMENT_ID': generate_id(), 'TEXT': comentariu, 'IS_TOXIC': 'BLANK'} for comentariu in bad_comments]
+bad_soup = [{'COMMENT_ID': generate_id(), 'TEXT': comentariu, 'IS_TOXIC': 'BLANK'} for comentariu in good_comments]
 
-dataset_rau = [{'text': comentariu, 'eticheta': 1} for comentariu in comentarii_rele]
-dataset_bun = [{'text': comentariu, 'eticheta': 0} for comentariu in comentarii_bune]
-
-dataset_final = dataset_rau + dataset_bun
+dataset_final = bad_soup + good_soup
 
 df = pd.DataFrame(dataset_final)
 
 df = df.sample(frac=1).reset_index(drop=True)
 
-numeFisier = 'datasetFinal.csv'
-df.to_csv(numeFisier, index=False, encoding='utf-8-sig')
+fileName = 'final_dataset.csv'
+df.to_csv(fileName, index=False, encoding='utf-8-sig')
 
-print(f"\n🎉 Succes! Ai creat fișierul '{numeFisier}' cu {len(df)} rânduri.")
-print("Acum poți trece la Pasul 2 (Antrenarea).")
+print(f"\n {fileName} file has been created with {len(df)} comments in it!\n")
+#AFTER RUNNING THIS FILE, RUN THE main.py TO MAKE FURTHER PROCESSING ON THE final_dataset.csv
+#AN TRAINING THE MODEL
