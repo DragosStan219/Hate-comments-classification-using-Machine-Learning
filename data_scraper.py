@@ -6,6 +6,9 @@ import time
 import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
@@ -23,28 +26,30 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), opti
 url = "https://www.youtube.com/watch?v=ZJ-jI6i1kzo"
 driver.get(url)
 
-# Scroll to load comments
-time.sleep(3)  # Wait for page load
-for _ in range(5):  # Scroll down 5 times
-    driver.execute_script("window.scrollBy(0, 3000)")
-    time.sleep(2)  # Wait for comments to load
+# Click on the comments section to load comments
+time.sleep(10)  # Wait for page load
+driver.find_element_by_name('yt-button-shape').click()
 
-# Extract comments from HTML
-soup = BeautifulSoup(driver.page_source, 'html.parser')
-comments = []
+
+# Scroll to load comments
+time.sleep(8)  # Wait for page load
+for _ in range(5):  # Scroll down 5 times
+    driver.execute_script("window.scrollBy(0, 500)")
+    time.sleep(4)  # Wait for comments to load
+
+    wait = WebDriverWait(driver,10)
+    comments_section = wait.until(EC.presence_of_element_located((By.TAG_NAME, "ytd-comments")))
 
 # Find comment elements (YouTube structure may vary)
-comment_containers = soup.find_all('ytd-comment-thread-renderer')
+comment_blocks = driver.find_elements(By.TAG_NAME, "ytd-comment-thread-renderer")
 
-for comment in comment_containers:
-    comments.append({
-        'text': comment.get_text(strip=True),
-        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
-    })
+for comment in comment_blocks:
+    author = comment.find_element(By.ID,"author-text").text
+    text = comment.find_element(By.ID, "content-text").text
 
 # Save to CSV
-df = pd.DataFrame(comments)
+df = pd.DataFrame(comment)
 df.to_csv('youtube_comments.csv', index=False, encoding='utf-8')
-print(f"Scraped {len(comments)} comments")
+print(f"Scraped {len(comment)} comments")
 
 driver.quit()
