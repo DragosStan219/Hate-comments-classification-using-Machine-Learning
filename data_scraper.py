@@ -1,55 +1,42 @@
 #url-s
 # https://www.youtube.com/watch?v=ZJ-jI6i1kzo (Sen. Cassidy reacts to RFK Jr.'s changes to the CDC website)
-# https://www.youtube.com/watch?v=cmnru0H1JlI (Geneva hosts Ukraine talks as Trump pushes peace plan | BBC News)
+# https://www.youtube.com/watch?v=1ZYbU82GVz4 (Flying: Relaxing Sleep Music for Meditation, Stress Relief & Relaxation by Peder B. Helland)
 
-import time
+from youtube_comment_downloader import YoutubeCommentDownloader
 import pandas as pd
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from bs4 import BeautifulSoup
+import itertools
 
-# Browser User Agent
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'}
+def descarca(url ,limita=500):
+    dowloader = YoutubeCommentDownloader()
+    print(f"⏳ Încep descărcarea de la: {url} ...")
 
-# Setup Selenium Chrome driver
-options = webdriver.ChromeOptions()
-options.add_argument(f'user-agent={headers["User-Agent"]}')
-options.add_argument('--no-sandbox')
-options.add_argument('--disable-dev-shm-usage')
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    generatorComentarii = dowloader.get_comments_from_url(url, sort_by=1)
 
-url = "https://www.youtube.com/watch?v=ZJ-jI6i1kzo"
-driver.get(url)
+    text = []
 
-# Click on the comments section to load comments
-time.sleep(10)  # Wait for page load
-driver.find_element_by_name('yt-button-shape').click()
+    for i in itertools.islice(generatorComentarii, limita):
+        text.append(i['text'])
 
+    print(f"✅ Gata! Am descărcat {len(text)} comentarii.")
+    return text
 
-# Scroll to load comments
-time.sleep(8)  # Wait for page load
-for _ in range(5):  # Scroll down 5 times
-    driver.execute_script("window.scrollBy(0, 500)")
-    time.sleep(4)  # Wait for comments to load
+url_toxic = 'https://www.youtube.com/watch?v=ZJ-jI6i1kzo'
+url_non_toxic = 'https://www.youtube.com/watch?v=1ZYbU82GVz4'
 
-    wait = WebDriverWait(driver,10)
-    comments_section = wait.until(EC.presence_of_element_located((By.TAG_NAME, "ytd-comments")))
+comentarii_rele = descarca(url_toxic, limita=500)
+comentarii_bune = descarca(url_non_toxic, limita=500)
 
-# Find comment elements (YouTube structure may vary)
-comment_blocks = driver.find_elements(By.TAG_NAME, "ytd-comment-thread-renderer")
+dataset_rau = [{'text': comentariu, 'eticheta': 1} for comentariu in comentarii_rele]
+dataset_bun = [{'text': comentariu, 'eticheta': 0} for comentariu in comentarii_bune]
 
-for comment in comment_blocks:
-    author = comment.find_element(By.ID,"author-text").text
-    text = comment.find_element(By.ID, "content-text").text
+dataset_final = dataset_rau + dataset_bun
 
-# Save to CSV
-df = pd.DataFrame(comment)
-df.to_csv('youtube_comments.csv', index=False, encoding='utf-8')
-print(f"Scraped {len(comment)} comments")
+df = pd.DataFrame(dataset_final)
 
-driver.quit()
+df = df.sample(frac=1).reset_index(drop=True)
+
+numeFisier = 'datasetFinal.csv'
+df.to_csv(numeFisier, index=False, encoding='utf-8-sig')
+
+print(f"\n🎉 Succes! Ai creat fișierul '{numeFisier}' cu {len(df)} rânduri.")
+print("Acum poți trece la Pasul 2 (Antrenarea).")
