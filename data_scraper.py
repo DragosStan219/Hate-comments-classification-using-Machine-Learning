@@ -1,4 +1,4 @@
-#url-s
+# Used URL-s
 # https://www.youtube.com/watch?v=ZJ-jI6i1kzo (Sen. Cassidy reacts to RFK Jr.'s changes to the CDC website)
 # https://www.youtube.com/watch?v=1ZYbU82GVz4 (Flying: Relaxing Sleep Music for Meditation, Stress Relief & Relaxation by Peder B. Helland)
 
@@ -35,7 +35,7 @@ url_non_toxic = 'https://www.youtube.com/watch?v=1ZYbU82GVz4'
 
 good_comments = download(url_toxic, limit=500)
 bad_comments = download(url_non_toxic, limit=500)
-#ADD COMMENTARY ID USING A RANDOM FUCNTION
+# ADD COMMENTARY ID USING A RANDOM FUNCTION
 good_soup = [{'COMMENT_ID': generate_id(), 'TEXT': comentariu, 'IS_TOXIC': 'BLANK'} for comentariu in bad_comments]
 bad_soup = [{'COMMENT_ID': generate_id(), 'TEXT': comentariu, 'IS_TOXIC': 'BLANK'} for comentariu in good_comments]
 
@@ -49,5 +49,5 @@ fileName = 'final_dataset.csv'
 df.to_csv(fileName, index=False, encoding='utf-8-sig')
 
 print(f"\n {fileName} file has been created with {len(df)} comments in it!\n")
-#AFTER RUNNING THIS FILE, RUN THE main.py TO MAKE FURTHER PROCESSING ON THE final_dataset.csv
+# AFTER RUNNING THIS FILE, RUN THE main.py TO MAKE FURTHER PROCESSING ON THE final_dataset.csv
 #AN TRAINING THE MODEL
