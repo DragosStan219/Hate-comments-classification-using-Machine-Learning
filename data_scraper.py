@@ -9,6 +9,8 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
+import requests
+from bs4 import BeautifulSoup
 
 # Browser User Agent
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
