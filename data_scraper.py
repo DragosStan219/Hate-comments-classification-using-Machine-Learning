@@ -4,37 +4,50 @@
 
 from youtube_comment_downloader import YoutubeCommentDownloader
 import pandas as pd
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from webdriver_manager.chrome import ChromeDriverManager
+import itertools
 
-# Browser User Agent
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-' AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'}
+# For generating the comment id
+import random
+import string
+ID_LENGHT = 8
+
+def download(url ,limit=500):
+    dowloader = YoutubeCommentDownloader()
+    print(f" Begin download from {url}...\n")
+
+    CommentGenerator = dowloader.get_comments_from_url(url, sort_by=1)
+
+    text = []
+
+    for i in itertools.islice(CommentGenerator, limit):
+        text.append(i['text'])
+
+    print(f"{len(text)} has been downloaded!\n")
+    return text
+
+def generate_id():
+    id = ''.join(random.choices(string.ascii_letters + string.digits, k = ID_LENGHT))
+    return id
 
 
-url = "https://www.youtube.com/watch?v=ZJ-jI6i1kzo"
-page = requests.get(url, headers=headers)
-print(page.text)
+url_toxic = 'https://www.youtube.com/watch?v=ZJ-jI6i1kzo'
+url_non_toxic = 'https://www.youtube.com/watch?v=1ZYbU82GVz4'
 
-#Pulling the information from raw HTML code
-soup = BeautifulSoup(page.text, 'html.parser')
-print(soup.prettify())
+good_comments = download(url_toxic, limit=500)
+bad_comments = download(url_non_toxic, limit=500)
+#ADD COMMENTARY ID USING A RANDOM FUCNTION
+good_soup = [{'COMMENT_ID': generate_id(), 'TEXT': comentariu, 'IS_TOXIC': 'BLANK'} for comentariu in bad_comments]
+bad_soup = [{'COMMENT_ID': generate_id(), 'TEXT': comentariu, 'IS_TOXIC': 'BLANK'} for comentariu in good_comments]
 
-#Extract specific data (where the information matters)
-quotes = []
-quote_boxes = soup.find_all('div', class_='style-scope ytd-comment-thread-renderer')
-for box in quote_boxes:
-    quote_text = box.img['alt'].split(" #")
-    quote = {
-        'theme': box.h5.text.strip(),
-        'image_url': box.img['src'],
-        'lines': quote_text[0],
-        'author': quote_text[1] if len(quote_text) > 1 else 'Unknown'
-    }
-    quotes.append(quote)
-# Display extracted quotes
-for q in quotes[:5]:  # print only first 5 for brevity
-    print(q)
+dataset_final = bad_soup + good_soup
+
+df = pd.DataFrame(dataset_final)
+
+df = df.sample(frac=1).reset_index(drop=True)
+
+fileName = 'final_dataset.csv'
+df.to_csv(fileName, index=False, encoding='utf-8-sig')
+
+print(f"\n {fileName} file has been created with {len(df)} comments in it!\n")
+#AFTER RUNNING THIS FILE, RUN THE main.py TO MAKE FURTHER PROCESSING ON THE final_dataset.csv
+#AN TRAINING THE MODEL
