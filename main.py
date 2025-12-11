@@ -6,7 +6,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 
 # Load the dataset
-ds = pd.read_csv("final_dataset.csv")
+try:
+    ds = pd.read_csv("final_dataset.csv", encoding='utf-8-sig')
+except:
+    ds = pd.read_csv("final_dataset.csv")
 
 # Clean the dataset
 clean_dataset = ds.dropna()
@@ -18,6 +21,7 @@ toxic_keywords = [
     'racist', 'sexist', 'shame', 'shut up', 'fake', 'hate', 'coward', 'spineless',
     'scum', 'propaganda', 'weak', 'pathetic', 'moron', 'fuck', 'kys'
 ]
+
 ds['label'] = ds['TEXT'].apply(lambda x: 1 if any(k in str(x).lower() for k in toxic_keywords) else 0)
 
 # Vectorize
@@ -46,22 +50,19 @@ model.fit(X_train, y_train)
 # Evaluate
 print(classification_report(y_test, model.predict(X_test)))
 
-# Fill BLANK values in final_dataset.csv with predictions
-ds_with_predictions = ds.copy()
-# Predict labels for rows with BLANK values
-mask = ds_with_predictions['label'].isna() | (ds_with_predictions['label'] == 'BLANK')
-if mask.any():
-    # Get the indices of rows with BLANK values
-    blank_indices = ds_with_predictions[mask].index
-    # Vectorize the text for prediction
-    X_blank = tfidf.transform(ds_with_predictions.loc[blank_indices, 'TEXT'].fillna(''))
-    # Get predictions
-    predictions = model.predict(X_blank)
-    # Fill the BLANK values with predictions
-    ds_with_predictions.loc[blank_indices, 'label'] = predictions
+ds_final = ds.copy()
 
-# Save the updated dataset
-ds_with_predictions.to_csv("final_dataset.csv", index=False)
+# Organize data in csv
+def creareCSVFinal(valoare):
+    if valoare == 1:
+        return "TOXIC"
+    else:
+        return "NON-TOXIC"
+    
+ds_final['IS_TOXIC'] = ds_final['label'].apply(creareCSVFinal)
 
+# Remove the label column from csv
+ds_final = ds_final.drop(columns=['label'])
 
-
+# Save final results in an external csv file
+ds_final.to_csv("rezultate_model.csv", index=False, encoding='utf-8-sig')
