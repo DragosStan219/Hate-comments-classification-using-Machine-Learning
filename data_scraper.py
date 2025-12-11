@@ -31,5 +31,5 @@ df = pd.DataFrame(dataset_final)
 
 df = df.sample(frac=1).reset_index(drop=True)
 
-numeFisier = 'datasetFinal.csv'
+numeFisier = 'final_dataset.csv'
 df.to_csv(numeFisier, index=False, encoding='utf-8-sig')
